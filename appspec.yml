@@ -1,0 +1,22 @@
+version: 0.0
+os: linux
+files:
+  - source: gonzo
+    destination: /usr/local/bin
+hooks:
+  BeforeInstall:
+    - location: codedeploy/scripts/install_dependencies.sh
+      timeout: 300
+      runas: root
+  AfterInstall:
+    - location: codedeploy/scripts/change_permissions.sh
+      timeout: 30
+      runas: root
+  ApplicationStart:
+    - location: codedeploy/scripts/start_server.sh
+      timeout: 30
+      runas: root
+  ApplicationStop:
+    - location: codedeploy/scripts/stop_server.sh
+      timeout: 30
+      runas: root
