@@ -11,8 +11,8 @@ phases:
       - echo "ENV Vars"
       - echo "========"
       - env
-      - echo Installing Go Dep...
-      - curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
+      #- echo Installing Go Dep...
+      #- curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
   pre_build:
     commands:
       - echo Resolving Dependencies...
