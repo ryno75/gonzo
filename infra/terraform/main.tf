@@ -90,7 +90,9 @@ resource "aws_codedeploy_deployment_group" "gonzo_test" {
       key   = "Name"
       value = "gonzo"
     }
+  }
 
+  ec2_tag_set {
     ec2_tag_filter {
       type  = "KEY_AND_VALUE"
       key   = "Environment"

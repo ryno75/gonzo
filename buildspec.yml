@@ -16,7 +16,7 @@ phases:
   pre_build:
     commands:
       - echo Resolving Dependencies...
-      - dep ensure
+      #- dep ensure
   build:
     commands:
       - echo Compiling gonzo binary for amd64 Linux...
