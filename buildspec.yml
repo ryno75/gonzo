@@ -20,7 +20,8 @@ phases:
       #- dep ensure
       - echo Debugging...
       - echo GOPATH contents...
-      - ls -al /go
+      - if $(which tree &> /dev/null); then tree /go/src; fi
+      - if [ -e /go/src/github.com/ryno75/gonzo ]; then ls -al /go/src/github.com/ryno75/gonzo; fi
       - ls -al $PWD/../
       - echo PWD contents...
       - ls -al $PWD
