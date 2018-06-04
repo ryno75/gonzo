@@ -3,96 +3,35 @@ provider "aws" {
   region  = "${var.region}"
 }
 
-data "aws_iam_policy_document" "codepipeline_arpdoc" {
-  statement {
-    actions = [
-      "sts:AssumeRole",
-    ]
+data "aws_caller_identity" "current" {}
 
-    principals = {
-      type = "Service"
-
-      identifiers = ["codepipeline.amazonaws.com"]
-    }
-  }
+resource "aws_iam_role" "codebuild" {
+  name               = "codebuild_service"
+  path               = "/gonzo/"
+  assume_role_policy = "${data.aws_iam_policy_document.codebuild_arpdoc.json}"
 }
 
-data "aws_iam_policy_document" "codepipeline_access" {
-  statement {
-    sid = "S3ReadAccess"
+resource "aws_iam_role_policy" "codebuild" {
+  name   = "codebuild_service_policy"
+  role   = "${aws_iam_role.codebuild.id}"
+  policy = "${data.aws_iam_policy_document.codebuild_access.json}"
+}
 
-    actions = [
-      "s3:GetObject",
-      "s3:GetObjectVersion",
-      "s3:GetBucketVersioning",
-    ]
+resource "aws_iam_role" "codedeploy" {
+  name               = "codedeploy_service"
+  path               = "/gonzo/"
+  assume_role_policy = "${data.aws_iam_policy_document.codedeploy_arpdoc.json}"
+}
 
-    resources = ["*"]
-  }
-
-  statement {
-    sid = "S3PutObjectAccess"
-
-    actions = [
-      "s3:PutObject",
-    ]
-
-    resources = [
-      "arn:aws:s3:::codepipeline*",
-      "arn:aws:s3:::elasticbeanstalk*",
-    ]
-  }
-
-  statement {
-    sid = "CodeBuildAccess"
-
-    actions = [
-      "codebuild:BatchGetBuilds",
-      "codebuild:StartBuild",
-    ]
-
-    resources = ["*"]
-  }
-
-  statement {
-    sid = "CodeDeployAccess"
-
-    actions = [
-      "codedeploy:CreateDeployment",
-      "codedeploy:GetApplicationRevision",
-      "codedeploy:GetDeployment",
-      "codedeploy:GetDeploymentConfig",
-      "codedeploy:RegisterApplicationRevision",
-    ]
-
-    resources = ["*"]
-  }
-
-  statement {
-    sid = "MiscServiceAccess"
-
-    actions = [
-      "elasticbeanstalk:*",
-      "ec2:*",
-      "elasticloadbalancing:*",
-      "autoscaling:*",
-      "cloudwatch:*",
-      "s3:*",
-      "sns:*",
-      "cloudformation:*",
-      "rds:*",
-      "sqs:*",
-      "ecs:*",
-      "iam:PassRole",
-    ]
-
-    resources = ["*"]
-  }
+resource "aws_iam_role_policy" "codedeploy" {
+  name   = "codedeploy_service_policy"
+  role   = "${aws_iam_role.codedeploy.id}"
+  policy = "${data.aws_iam_policy_document.codedeploy_access.json}"
 }
 
 resource "aws_iam_role" "codepipeline" {
   name               = "codepipeline_service"
-  path               = "/codepipeline/"
+  path               = "/gonzo/"
   assume_role_policy = "${data.aws_iam_policy_document.codepipeline_arpdoc.json}"
 }
 
@@ -102,54 +41,72 @@ resource "aws_iam_role_policy" "codepipeline" {
   policy = "${data.aws_iam_policy_document.codepipeline_access.json}"
 }
 
-/*
-resource "aws_codepipeline" "testMultiSourcePipeline" {
-id                                                  = testMultiSourcePipeline
-arn                                                 = arn:aws:codepipeline:us-west-2:779793738667:testMultiSourcePipeline
-artifact_store.#                                    = 1
-artifact_store.0.encryption_key.#                   = 0
-artifact_store.0.location                           = codepipeline-us-west-2-347001196608
-artifact_store.0.type                               = S3
-name                                                = testMultiSourcePipeline
-role_arn                                            = arn:aws:iam::779793738667:role/AWS-CodePipeline-Service
-stage.#                                             = 2
-stage.0.action.#                                    = 1
-stage.0.action.0.category                           = Source
-stage.0.action.0.configuration.%                    = 4
-stage.0.action.0.configuration.Branch               = master
-stage.0.action.0.configuration.Owner                = 2ndWatch
-stage.0.action.0.configuration.PollForSourceChanges = false
-stage.0.action.0.configuration.Repo                 = BeanstalkTestNodeJS
-stage.0.action.0.input_artifacts.#                  = 0
-stage.0.action.0.name                               = Source
-stage.0.action.0.output_artifacts.#                 = 1
-stage.0.action.0.output_artifacts.0                 = nodeTest
-stage.0.action.0.owner                              = ThirdParty
-stage.0.action.0.provider                           = GitHub
-stage.0.action.0.role_arn                           =
-stage.0.action.0.run_order                          = 1
-stage.0.action.0.version                            = 1
-stage.0.name                                        = Source
-stage.1.action.#                                    = 1
-stage.1.action.0.category                           = Deploy
-stage.1.action.0.configuration.%                    = 2
-stage.1.action.0.configuration.ApplicationName      = testNodeJS
-stage.1.action.0.configuration.EnvironmentName      = Testnodejs-env
-stage.1.action.0.input_artifacts.#                  = 1
-stage.1.action.0.input_artifacts.0                  = nodeTest
-stage.1.action.0.name                               = Testnodejs-env
-stage.1.action.0.output_artifacts.#                 = 0
-stage.1.action.0.owner                              = AWS
-stage.1.action.0.provider                           = ElasticBeanstalk
-stage.1.action.0.role_arn                           =
-stage.1.action.0.run_order                          = 1
-stage.1.action.0.version                            = 1
-stage.1.name                                        = Staging
-}
-*/
-
-resource "aws_s3_bucket" "codedeploy" {
+resource "aws_s3_bucket" "code_artifacts" {
   bucket = "${local.artifact_bucket}"
+}
+
+resource "aws_codebuild_project" "gonzo_test" {
+  name           = "${local.codebuild_proj_name}"
+  description    = "gonzo_test_codebuild_project"
+  build_timeout  = "5"
+  service_role   = "${aws_iam_role.codebuild.arn}"
+  encryption_key = "arn:aws:kms:${var.region}:${data.aws_caller_identity.current.account_id}:alias/aws/s3"
+
+  artifacts {
+    type = "CODEPIPELINE"
+    name = "gonzo-bld"
+  }
+
+  environment {
+    compute_type    = "BUILD_GENERAL1_SMALL"
+    image           = "aws/codebuild/golang:1.10"
+    type            = "LINUX_CONTAINER"
+    privileged_mode = false
+
+    environment_variable {
+      "name"  = "PROJECT_NAME"
+      "value" = "gonzo"
+    }
+  }
+
+  source {
+    type = "CODEPIPELINE"
+  }
+}
+
+resource "aws_codedeploy_app" "gonzo_test" {
+  name = "${local.codedeploy_app_name}"
+}
+
+resource "aws_codedeploy_deployment_group" "gonzo_test" {
+  app_name               = "${aws_codedeploy_app.gonzo_test.name}"
+  deployment_group_name  = "${local.codedeploy_dg_name}"
+  service_role_arn       = "${aws_iam_role.codedeploy.arn}"
+  deployment_config_name = "CodeDeployDefault.OneAtATime"
+
+  ec2_tag_set {
+    ec2_tag_filter {
+      type  = "KEY_AND_VALUE"
+      key   = "Name"
+      value = "gonzo"
+    }
+
+    ec2_tag_filter {
+      type  = "KEY_AND_VALUE"
+      key   = "Environment"
+      value = "test"
+    }
+  }
+
+  deployment_style {
+    deployment_option = "WITHOUT_TRAFFIC_CONTROL"
+    deployment_type   = "IN_PLACE"
+  }
+
+  auto_rollback_configuration {
+    enabled = true
+    events  = ["DEPLOYMENT_FAILURE"]
+  }
 }
 
 resource "aws_codepipeline" "testMultiSource" {
@@ -157,7 +114,7 @@ resource "aws_codepipeline" "testMultiSource" {
   role_arn = "${aws_iam_role.codepipeline.arn}"
 
   artifact_store {
-    location = "${aws_s3_bucket.codedeploy.bucket}"
+    location = "${aws_s3_bucket.code_artifacts.bucket}"
     type     = "S3"
   }
 
@@ -215,8 +172,8 @@ resource "aws_codepipeline" "testMultiSource" {
       run_order       = "3"
 
       configuration {
-        ApplicationName     = "${local.codedeploy_app_name}"
-        DeploymentGroupName = "${local.codedeploy_dg_name}"
+        ApplicationName     = "${aws_codedeploy_deployment_group.gonzo_test.app_name}"
+        DeploymentGroupName = "${aws_codedeploy_deployment_group.gonzo_test.deployment_group_name}"
       }
     }
   }
