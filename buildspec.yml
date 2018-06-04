@@ -2,6 +2,7 @@ version: 0.2
 
 env:
   variables:
+    FOO: src/github.com/ryno75/gonzo
     #SRC_DIR: src/github.com/ryno75/gonzo
 
 phases:
