@@ -2,7 +2,7 @@ version: 0.2
 
 env:
   variables:
-    SRC_DIR: src/github.com/ryno75/gonzo
+    #SRC_DIR: src/github.com/ryno75/gonzo
 
 phases:
   install:
@@ -15,8 +15,14 @@ phases:
       #- curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
   pre_build:
     commands:
-      - echo Resolving Dependencies...
+      #- echo Resolving Dependencies...
       #- dep ensure
+      - echo Debugging...
+      - echo GOPATH contents...
+      - ls -al /go
+      - ls -al $PWD/../
+      - echo PWD contents...
+      - ls -al $PWD
   build:
     commands:
       - echo Compiling gonzo binary for amd64 Linux...
