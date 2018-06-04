@@ -2,7 +2,7 @@ version: 0.2
 
 env:
   variables:
-    SRC_DIR: src/github.com/ryno75/gonzo
+    FOO_DIR: src/github.com/ryno75/gonzo
 
 phases:
   install:
