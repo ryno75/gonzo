@@ -1,6 +1,7 @@
 provider "aws" {
   version = "1.20.0"
   region  = "${var.region}"
+  profile = "${var.aws_profile}"
 }
 
 data "aws_caller_identity" "current" {}
@@ -111,7 +112,18 @@ resource "aws_codedeploy_deployment_group" "gonzo_test" {
   }
 }
 
-resource "aws_codepipeline" "testMultiSource" {
+data "template_file" "put_webhook_json" {
+  template = "${file("data/webhook.json.tpl")}"
+
+  vars {
+    webhook_name  = "${local.webhook_name}"
+    pipeline_name = "${local.pipeline_name}"
+    target_action = "Source"
+    token         = "${var.github_token}"
+  }
+}
+
+resource "aws_codepipeline" "test_multi_source" {
   name     = "${local.pipeline_name}"
   role_arn = "${aws_iam_role.codepipeline.arn}"
 
@@ -134,7 +146,7 @@ resource "aws_codepipeline" "testMultiSource" {
 
       configuration {
         Owner                = "${local.github_owner}"
-        Repo                 = "${local.gonzo_repo}"
+        Repo                 = "${local.repo_name}"
         Branch               = "master"
         OAuthToken           = "${var.github_token}"
         PollForSourceChanges = "false"
@@ -177,6 +189,25 @@ resource "aws_codepipeline" "testMultiSource" {
         ApplicationName     = "${aws_codedeploy_deployment_group.gonzo_test.app_name}"
         DeploymentGroupName = "${aws_codedeploy_deployment_group.gonzo_test.deployment_group_name}"
       }
+    }
+  }
+
+  # ATTENTION:
+  # The following provisioners require the AWS CLI to be installed
+  # and configured with the same profile being used for Terraform
+  provisioner "local-exec" {
+    command = "aws codepipeline put-webhook --cli-input-json '${data.template_file.put_webhook_json.rendered}'"
+
+    environment {
+      AWS_DEFAULT_REGION = "${var.region}"
+    }
+  }
+
+  provisioner "local-exec" {
+    command = "aws codepipeline register-webhook-with-third-party --webhook-name ${local.webhook_name}"
+
+    environment {
+      AWS_DEFAULT_REGION = "${var.region}"
     }
   }
 }
