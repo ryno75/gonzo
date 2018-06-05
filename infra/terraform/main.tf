@@ -1,6 +1,6 @@
 provider "aws" {
   version = "1.20.0"
-  region  = "${var.region}"
+  region  = "${var.aws_region}"
   profile = "${var.aws_profile}"
 }
 
@@ -51,7 +51,7 @@ resource "aws_codebuild_project" "gonzo_test" {
   description    = "gonzo_test_codebuild_project"
   build_timeout  = "5"
   service_role   = "${aws_iam_role.codebuild.arn}"
-  encryption_key = "arn:aws:kms:${var.region}:${data.aws_caller_identity.current.account_id}:alias/aws/s3"
+  encryption_key = "arn:aws:kms:${var.aws_region}:${data.aws_caller_identity.current.account_id}:alias/aws/s3"
 
   artifacts {
     type = "CODEPIPELINE"
@@ -199,7 +199,8 @@ resource "aws_codepipeline" "test_multi_source" {
     command = "aws codepipeline put-webhook --cli-input-json '${data.template_file.put_webhook_json.rendered}'"
 
     environment {
-      AWS_DEFAULT_REGION = "${var.region}"
+      AWS_DEFAULT_PROFILE = "${var.aws_profile}"
+      AWS_DEFAULT_REGION  = "${var.aws_region}"
     }
   }
 
@@ -207,7 +208,8 @@ resource "aws_codepipeline" "test_multi_source" {
     command = "aws codepipeline register-webhook-with-third-party --webhook-name ${local.webhook_name}"
 
     environment {
-      AWS_DEFAULT_REGION = "${var.region}"
+      AWS_DEFAULT_PROFILE = "${var.aws_profile}"
+      AWS_DEFAULT_REGION  = "${var.aws_region}"
     }
   }
 }
